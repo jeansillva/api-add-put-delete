@@ -4,18 +4,6 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { checkSessionId } from '../middlewares/check-session-id';
 
-// http
-
-// controller
-// service
-// repository
-
-// SOLID
-
-// unit
-// integration
-// e2e
-
 export async function booksRouter(app: FastifyInstance) {
   app.get(
     '/',
@@ -86,11 +74,57 @@ export async function booksRouter(app: FastifyInstance) {
     return reply.status(201).send();
   });
 
-  app.put('/:id', () => {
-    // Implement PUT route for updating a book
-  });
-
-  app.delete('/:id', () => {
-    // Implement DELETE route for deleting a book
-  });
+  app.put(
+    '/:id',
+    {
+      preHandler: [checkSessionId],
+    },
+    async (request, reply) => {
+      const { sessionId } = request.cookies;
+  
+      const { id } = request.params as { id: string };
+      const { title, author, genrer } = request.body as { title?: string; author?: string; genrer?: string };
+  
+      const book = await knex('books')
+        .where({ id, session_id: sessionId })
+        .first();
+  
+      if (!book) {
+        return reply.status(404).send({ message: 'livro não foi encontrado' });
+      }
+  
+      await knex('books')
+        .where({ id, session_id: sessionId })
+        .update({ title, author, genrer });
+  
+      return reply.status(200).send({ message: 'O livro foi atualizado' });
+    },
+  );
+  
+  app.delete(
+    '/:id',
+    {
+      preHandler: [checkSessionId],
+    },
+    async (request, reply) => {
+      const { sessionId } = request.cookies;
+  
+      const { id } = request.params as { id: string };
+  
+      const book = await knex('books')
+        .where({ id, session_id: sessionId })
+        .first();
+  
+      if (!book) {
+        return reply.status(404).send({ message: 'livro não foi encontrado' });
+      }
+  
+      await knex('books')
+        .where({ id, session_id: sessionId })
+        .delete();
+  
+        return reply.status(200).send({ message: 'Livro excluido' });
+    },
+  );
+   
 }
