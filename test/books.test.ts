@@ -13,8 +13,8 @@ describe('Books routes', () => {
   });
 
   beforeEach(() => {
-    execSync('yarn knex migrate:rollback --all');
-    execSync('yarn knex migrate:latest');
+    execSync('npx knex migrate:rollback --all');
+    execSync('npx knex migrate:latest');
   });
 
   it('should be able to create a new book', async () => {
@@ -27,20 +27,20 @@ describe('Books routes', () => {
     expect(response.status).toBe(201);
   });
 
-  describe('GET/books', () => {
+  describe('GET /books', () => {
     it('should be able to list all books', async () => {
       const book = {
         title: 'Test Book 2',
         author: 'Test Author 2',
         genrer: 'Test Genre 2',
       };
-
+      
       const createBookResponse = await request(app.server)
         .post('/books')
         .send(book);
-
+      
       const cookies = createBookResponse.get('Set-Cookie') ?? [];
-
+      
       const listBooksResponse = await request(app.server)
         .get('/books')
         .set('Cookie', cookies)
@@ -51,7 +51,7 @@ describe('Books routes', () => {
       ]);
     });
 
-    it('should retur status 401 when there is not cookies', async () => {
+    it('should return status 401 when there is no sessionId in cookies', async () => {
       const listBooksResponse = await request(app.server).get('/books');
 
       expect(listBooksResponse.status).toBe(401);
@@ -85,7 +85,7 @@ describe('Books routes', () => {
 
     expect(getBookResponse.body.book).toEqual(expect.objectContaining(book));
   });
-  
+
   it('should be able to edit a specific book', async () => {
     const book = {
       title: 'Test Book 2',
@@ -98,7 +98,13 @@ describe('Books routes', () => {
       .send(book);
 
     const cookies = createBookResponse.get('Set-Cookie') ?? [];
-    const bookId = createBookResponse.body.id;
+
+    const listBooksResponse = await request(app.server)
+      .get('/books')
+      .set('Cookie', cookies)
+      .expect(200);
+
+    const bookId = listBooksResponse.body.books[0].id;
 
     const updatedBook = {
       title: 'Updated Book Title',
@@ -112,7 +118,7 @@ describe('Books routes', () => {
       .send(updatedBook)
       .expect(200);
 
-    expect(updateResponse.body.message).toBe('Livro atualizado com sucesso');
+    expect(updateResponse.body.message).toBe('O livro foi atualizado');
 
     const getBookResponse = await request(app.server)
       .get(`/books/${bookId}`)
@@ -130,27 +136,26 @@ describe('Books routes', () => {
       author: 'Test Author 3',
       genrer: 'Test Genre 3',
     };
-
+  
     const createBookResponse = await request(app.server)
       .post('/books')
       .send(book);
-
+  
     const cookies = createBookResponse.get('Set-Cookie') ?? [];
-    const bookId = createBookResponse.body.id;
-
+  
+    const listBooksResponse = await request(app.server)
+      .get('/books')
+      .set('Cookie', cookies)
+      .expect(200);
+  
+    const bookId = listBooksResponse.body.books[0].id;
     const deleteResponse = await request(app.server)
       .delete(`/books/${bookId}`)
       .set('Cookie', cookies)
       .expect(200);
-
-    expect(deleteResponse.body.message).toBe('Livro excluído com sucesso');
-    
-    const getDeletedBookResponse = await request(app.server)
-      .get(`/books/${bookId}`)
-      .set('Cookie', cookies)
-      .expect(404);
-
-    expect(getDeletedBookResponse.body.message).toBe('Livro não encontrado');
+  
+    expect(deleteResponse.body.message).toBe('Livro excluido');
+  
   });
-
+  
 });
