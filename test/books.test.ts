@@ -85,6 +85,72 @@ describe('Books routes', () => {
 
     expect(getBookResponse.body.book).toEqual(expect.objectContaining(book));
   });
-  it.todo('should be able to edit a specific book', () => {});
-  it.todo('should be able to delete a specific book', () => {});
+  
+  it('should be able to edit a specific book', async () => {
+    const book = {
+      title: 'Test Book 2',
+      author: 'Test Author 2',
+      genrer: 'Test Genre 2',
+    };
+
+    const createBookResponse = await request(app.server)
+      .post('/books')
+      .send(book);
+
+    const cookies = createBookResponse.get('Set-Cookie') ?? [];
+    const bookId = createBookResponse.body.id;
+
+    const updatedBook = {
+      title: 'Updated Book Title',
+      author: 'Updated Author',
+      genrer: 'Updated Genre',
+    };
+
+    const updateResponse = await request(app.server)
+      .put(`/books/${bookId}`)
+      .set('Cookie', cookies)
+      .send(updatedBook)
+      .expect(200);
+
+    expect(updateResponse.body.message).toBe('Livro atualizado com sucesso');
+
+    const getBookResponse = await request(app.server)
+      .get(`/books/${bookId}`)
+      .set('Cookie', cookies)
+      .expect(200);
+
+    expect(getBookResponse.body.book.title).toBe(updatedBook.title);
+    expect(getBookResponse.body.book.author).toBe(updatedBook.author);
+    expect(getBookResponse.body.book.genrer).toBe(updatedBook.genrer);
+  });
+
+  it('should be able to delete a specific book', async () => {
+    const book = {
+      title: 'Test Book 3',
+      author: 'Test Author 3',
+      genrer: 'Test Genre 3',
+    };
+
+    const createBookResponse = await request(app.server)
+      .post('/books')
+      .send(book);
+
+    const cookies = createBookResponse.get('Set-Cookie') ?? [];
+    const bookId = createBookResponse.body.id;
+
+    const deleteResponse = await request(app.server)
+      .delete(`/books/${bookId}`)
+      .set('Cookie', cookies)
+      .expect(200);
+
+    expect(deleteResponse.body.message).toBe('Livro excluído com sucesso');
+    
+    const getDeletedBookResponse = await request(app.server)
+      .get(`/books/${bookId}`)
+      .set('Cookie', cookies)
+      .expect(404);
+
+    expect(getDeletedBookResponse.body.message).toBe('Livro não encontrado');
+  });
+
 });
